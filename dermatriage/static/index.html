@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DermaTriage · Apoyo al triaje de lesiones de piel</title>
+  <meta name="description" content="Sube la foto de una lesión de piel y recibe una sugerencia de riesgo (bajo, medio o alto) y de referencia a dermatología.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-row">
+      <span class="brand">DermaTriage</span>
+      <span class="tag">Apoyo a la decisión clínica</span>
+    </div>
+  </header>
+
+  <main class="wrap" id="main">
+    <section class="card" aria-labelledby="titulo">
+      <h1 id="titulo">Clasifica el riesgo de una lesión</h1>
+      <p class="lead">Toma o sube una foto clara de la lesión. El sistema sugiere riesgo bajo, medio o alto y la conducta de referencia.</p>
+
+      <ul class="tips" aria-label="Consejos para una buena foto">
+        <li>Usa buena luz, sin flash directo.</li>
+        <li>Acerca la cámara a unos 10–15 cm. Enfoca la lesión.</li>
+        <li>No uses filtros. Incluye un poco de piel sana alrededor.</li>
+      </ul>
+
+      <div class="actions" id="acciones-foto">
+        <input class="visually-hidden" id="foto" type="file" accept="image/jpeg,image/png,image/webp">
+        <label class="btn primary" for="foto" id="etiqueta-foto">Tomar o elegir foto</label>
+      </div>
+
+      <figure class="preview" id="vista" hidden>
+        <img id="imagen" alt="Vista previa de la foto seleccionada">
+        <figcaption id="nombre-archivo"></figcaption>
+      </figure>
+
+      <div class="actions" id="acciones-clasificar" hidden>
+        <button type="button" class="btn primary" id="clasificar">Clasificar</button>
+        <button type="button" class="btn" id="cambiar">Cambiar foto</button>
+      </div>
+
+      <p class="status" id="estado" role="status" aria-live="polite"></p>
+      <p class="error" id="error" role="alert" hidden></p>
+    </section>
+
+    <section class="card result" id="resultado" tabindex="-1" aria-labelledby="titulo-resultado" hidden>
+      <h2 id="titulo-resultado">Resultado</h2>
+      <div class="badge" id="insignia" data-nivel="">
+        <span class="badge-icon" id="insignia-icono" aria-hidden="true"></span>
+        <span class="badge-text" id="insignia-texto"></span>
+      </div>
+      <p class="referral" id="recomendacion"></p>
+      <p class="review" id="revision" hidden>La confianza es baja. Pide una segunda revisión clínica.</p>
+
+      <h3>Probabilidad por nivel</h3>
+      <ul class="bars" id="barras"></ul>
+      <p class="meta" id="meta"></p>
+      <p class="disclaimer" id="advertencia"></p>
+
+      <div class="actions">
+        <button type="button" class="btn primary" id="nueva">Clasificar otra foto</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Herramienta de apoyo a la decisión. No reemplaza el juicio clínico ni el diagnóstico dermatológico.</p>
+    <p>Esta página no guarda la foto. No subas datos que identifiquen al paciente.</p>
+  </footer>
+</body>
+</html>
