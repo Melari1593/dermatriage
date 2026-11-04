@@ -252,3 +252,49 @@ def test_api_validations(monkeypatch):
     assert c.post("/classify", files={"file": ("a.txt", b"x", "text/plain")}).status_code == 415
     assert c.post("/classify", files={"file": ("a.png", b"", "image/png")}).status_code == 400
     assert c.post("/classify", files={"file": ("a.png", b"bad", "image/png")}).status_code == 422
+
+
+# ---------- página web ----------
+def _web_deps():
+    pytest.importorskip("fastapi")
+    pytest.importorskip("httpx")
+    pytest.importorskip("multipart")
+    from fastapi.testclient import TestClient
+
+    from dermatriage import serve
+
+    return TestClient, serve
+
+
+def test_web_page_is_served_with_security_headers():
+    TestClient, serve = _web_deps()
+    c = TestClient(serve.app)
+    home = c.get("/")
+    assert home.status_code == 200 and "DermaTriage" in home.text
+    assert home.headers["x-content-type-options"] == "nosniff"
+    assert "frame-ancestors 'none'" in home.headers["content-security-policy"]
+    assert c.get("/styles.css").status_code == 200
+    assert "javascript" in c.get("/app.js").headers["content-type"]
+    # La página no debe tapar las rutas de la API.
+    health = c.get("/health")
+    assert health.json() == {"estado": "ok"}
+    assert health.headers["cache-control"] == "no-store"
+
+
+def test_page_ids_used_by_script_exist_in_html():
+    import re
+
+    _, serve = _web_deps()
+    js = (serve.STATIC_DIR / "app.js").read_text()
+    html = (serve.STATIC_DIR / "index.html").read_text()
+    ids = set(re.findall(r'\$\("([^"]+)"\)', js))
+    assert ids and [i for i in ids if f'id="{i}"' not in html] == []
+
+
+def test_classify_returns_503_when_model_file_is_missing(monkeypatch, tmp_path):
+    TestClient, serve = _web_deps()
+    serve.get_classifier.cache_clear()
+    monkeypatch.setenv("DERMA_MODEL_PATH", str(tmp_path / "no-existe.joblib"))
+    r = TestClient(serve.app).post("/classify", files={"file": ("a.png", png_bytes(), "image/png")})
+    assert r.status_code == 503
+    serve.get_classifier.cache_clear()

@@ -28,12 +28,13 @@ dermatriage/
   train.py        Entrenamiento y umbral clínico para "alto"
   evaluate.py     Sensibilidad, errores críticos, subgrupos
   predict.py      Foto -> riesgo + recomendación
-  serve.py        API HTTP (FastAPI)
+  serve.py        API HTTP (FastAPI) y servidor de la página web
   cli.py          Comandos: harmonize, embed, train
+  static/         Página web: index.html, styles.css, app.js
 integration/
   classifyLesion.js   Reemplaza la función simulada en DermaTriage.jsx
 tests/
-  test_pipeline.py    16 pruebas con datos sintéticos
+  test_pipeline.py    19 pruebas con datos sintéticos
 ```
 
 ## Requisitos
@@ -64,8 +65,9 @@ python -m dermatriage.cli embed --manifest artifacts/manifest.csv --out artifact
 python -m dermatriage.cli train --manifest artifacts/manifest.csv \
     --embeddings artifacts/embeddings.npz --out artifacts
 
-# 4. Levanta la API.
+# 4. Levanta la API y la página web.
 DERMA_MODEL_PATH=artifacts/model.joblib uvicorn dermatriage.serve:app --port 8000
+# Abre http://localhost:8000
 
 # 5. Ejecuta las pruebas.
 pytest
@@ -83,6 +85,30 @@ Salidas de `train` en `artifacts/`: `model.joblib`, `report.json`,
 5. Si el resultado no es "alto" y la confianza es menor de 50 %, la respuesta marca `requiere_revision`.
 
 El umbral prioriza no perder melanomas. El costo es más falsos positivos.
+
+## Página web
+
+El mismo servidor FastAPI sirve la página en `/`. No necesitas otro servidor ni un paso de compilación.
+
+1. La persona toma o elige una foto. En el celular se abre la cámara.
+2. La página reduce la foto a 1600 px por lado y la envía a `POST /classify`.
+3. La página muestra el nivel de riesgo, la recomendación y la probabilidad por nivel.
+4. Si la confianza es baja, muestra un aviso para pedir segunda revisión.
+
+La página funciona en celular y en computador, en modo claro y oscuro.
+Tiene mensajes de error para formato no admitido, foto muy grande, foto ilegible,
+modelo no disponible y falta de conexión.
+
+Seguridad:
+- El servidor no guarda la foto. Las respuestas de `/classify` llevan `Cache-Control: no-store`.
+- Las cabeceras impiden cargar scripts de otros dominios y mostrar la página dentro de otra.
+- Usa HTTPS al publicarla. Sin HTTPS, los navegadores móviles pueden bloquear la cámara.
+- Un servidor con el modelo y TensorFlow necesita unos 2 GB de memoria. Es una estimación, no la medí.
+- La página no tiene inicio de sesión. Si la publicas abierta, cualquiera puede usarla.
+  Pon un control de acceso delante (por ejemplo, el de tu proveedor de alojamiento).
+
+Si publicas la página en un dominio distinto al de la API, define `DERMA_CORS_ORIGINS`
+y cambia la ruta `/classify` en `static/app.js` por la URL completa.
 
 ## Integración con DermaTriage.jsx
 
@@ -118,7 +144,9 @@ El resultado trae `risk` (`low`, `medium`, `high`), `probabilities`, `confidence
   Los nombres de cáncer (melanoma, BCC, SCC...) deben coincidir con `SCIN_TO_RISK` en `config.py`.
   Revisa la lista de etiquetas sin mapear.
 - **Estructura de carpetas de PAD-UFES-20.** El cargador busca los PNG de forma recursiva.
-- **Ninguna ejecución con datos reales.** Las 16 pruebas usan datos sintéticos.
+- **Ninguna ejecución con datos reales.** Las 19 pruebas usan datos sintéticos.
+- **Página web con el modelo real.** Probé la página en un navegador móvil con un modelo sintético
+  y un embedder falso. No la probé con Derm Foundation ni con fotos clínicas.
 
 ## Privacidad
 
